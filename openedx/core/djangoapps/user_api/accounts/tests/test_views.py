@@ -12,17 +12,19 @@ import json
 from mock import patch
 from nose.plugins.attrib import attr
 from pytz import UTC
+from unittest import TestCase
 import unittest
 
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test.testcases import TransactionTestCase
 from django.test.utils import override_settings
+from rest_framework import status
 from rest_framework.test import APITestCase, APIClient
 from openedx.core.djangoapps.user_api.models import UserPreference
 
 from student.tests.factories import UserFactory
-from student.models import UserProfile, LanguageProficiency, PendingEmailChange
+from student.models import User, UserProfile, LanguageProficiency, PendingEmailChange
 from openedx.core.djangoapps.user_api.accounts import ACCOUNT_VISIBILITY_PREF_KEY
 from openedx.core.djangoapps.user_api.preferences.api import set_user_preference
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
@@ -817,3 +819,52 @@ class TestAccountAPITransactions(TransactionTestCase):
         data = response.data
         self.assertEqual(old_email, data["email"])
         self.assertEqual(u"m", data["gender"])
+
+
+@unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Account APIs are only supported in LMS')
+class TestAccountDeactivation(TestCase):
+    """
+    Tests the account deactivation endpoint.
+    """
+    PASSWORD = 'test'
+
+    def setUp(self):
+        super(TestAccountDeactivation, self).setUp()
+        self.staff_user = UserFactory.create(is_staff=True, password=self.PASSWORD)
+        self.test_user = UserFactory.create()
+        self.url = reverse('accounts_deactivation', kwargs={'username': self.test_user.username})
+        self.client = APIClient()
+
+    def assert_activation_status(self, client, expected_status=status.HTTP_200_OK, expected_activation_status=False):
+        """
+        Helper function for making a request to the deactivation endpoint, and asserting the status.
+
+        Args:
+            client(APIClient): Client with which the request is made.
+            expected_status(int): Expected request's response status.
+            expected_activation_status(bool): Expected user is_active attribute value.
+        """
+        response = client.post(self.url)
+        self.assertEqual(response.status_code, expected_status)
+        test_user = User.objects.get(username=self.test_user.username)
+        self.assertEqual(test_user.is_active, expected_activation_status)
+
+    def test_user_deactivated(self):
+        """
+        Verify a user is deactivated when staff posts to the deactivation endpoint.
+        """
+        self.client.login(username=self.staff_user.username, password=self.PASSWORD)
+        self.assertTrue(self.test_user.is_active)
+        self.assert_activation_status(self.client)
+
+    def test_non_staff_rejection(self):
+        """
+        Verify a non-staff user is rejected from posting to the deactivation endpoint.
+        """
+        self.client.login(username=self.test_user.username, password=self.PASSWORD)
+        self.assertTrue(self.test_user.is_active)
+        self.assert_activation_status(
+            self.client,
+            expected_status=status.HTTP_403_FORBIDDEN,
+            expected_activation_status=True
+        )

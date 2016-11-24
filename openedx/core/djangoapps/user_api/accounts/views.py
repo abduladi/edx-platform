@@ -9,6 +9,7 @@ from edx_rest_framework_extensions.authentication import JwtAuthentication
 from rest_framework import permissions
 from rest_framework import status
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ViewSet
 
 from openedx.core.lib.api.authentication import (
@@ -16,6 +17,8 @@ from openedx.core.lib.api.authentication import (
     OAuth2AuthenticationAllowInactiveUser,
 )
 from openedx.core.lib.api.parsers import MergePatchParser
+from openedx.core.lib.api.permissions import IsStaffUser
+from student.models import User
 from .api import get_account_settings, update_account_settings
 from ..errors import UserNotFound, UserNotAuthorized, AccountUpdateError, AccountValidationError
 
@@ -217,4 +220,24 @@ class AccountViewSet(ViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        return Response(account_settings)
+
+
+class AccountDeactivationView(APIView):
+    """
+    Account deactivation viewset. Currently only supports POST requests.
+    Only admins can deactivate accounts.
+    """
+    permission_classes = (permissions.IsAuthenticated, IsStaffUser)
+
+    def post(self, request, username):
+        """
+        POST /api/user/v1/accounts/{username}/deactivate/
+
+        Changes the 'is_active' attribute of a user.
+        """
+        user = User.objects.get(username=username)
+        user.is_active = False
+        user.save()
+        account_settings = get_account_settings(request, [username])[0]
         return Response(account_settings)
