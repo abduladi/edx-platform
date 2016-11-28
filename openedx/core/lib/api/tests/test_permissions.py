@@ -177,31 +177,3 @@ class IsStaffOrOwnerTests(TestCase):
         request = RequestFactory().get('/?username={}'.format(user.username))
         request.user = UserFactory.create()
         self.assertFalse(self.permission.has_permission(request, None))
-
-
-@ddt.ddt
-class IsStaffUserTests(TestCase):
-    """ Tests for IsStaffUser permission class. """
-    def setUp(self):
-        super(IsStaffUserTests, self).setUp()
-        self.permission = IsStaffUser()
-        self.request = RequestFactory().get('/')
-
-    def assert_user_has_object_permission(self, user, permitted):
-        """
-        Asserts whether or not the user has access permisions.
-
-        Args:
-            user(User): User that makes the request.
-            permitted(boolean): Wether or not the user should be permitted to make the request.
-        """
-        self.request.user = user
-        self.assertEqual(self.permission.has_permission(self.request, None), permitted)
-
-    @ddt.data(True, False)
-    def test_user_has_permission(self, is_staff):
-        """
-        Verify only staff user has permission.
-        """
-        user = UserFactory.create(is_staff=is_staff)
-        self.assert_user_has_object_permission(user, is_staff)

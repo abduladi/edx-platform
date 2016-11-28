@@ -157,11 +157,3 @@ class IsStaffOrOwner(permissions.BasePermission):
         return user.is_staff \
             or (user.username == request.GET.get('username')) \
             or (user.username == getattr(request, 'data', {}).get('username'))
-
-
-class IsStaffUser(permissions.BasePermission):
-    """
-    Permission that allows access to admin users.
-    """
-    def has_permission(self, request, view):
-        return request.user.is_staff
