@@ -1,8 +1,10 @@
 """Tests covering Credentials utilities."""
 import unittest
+import uuid
 
 from django.conf import settings
 from django.core.cache import cache
+import mock
 from nose.plugins.attrib import attr
 import httpretty
 from edx_oauth2_provider.tests.factories import ClientFactory
@@ -16,6 +18,7 @@ from openedx.core.djangoapps.credentials.utils import (
     get_programs_credentials
 )
 from openedx.core.djangoapps.credentials.tests import factories
+from openedx.core.djangoapps.catalog.tests import factories as catalog_factories
 from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin, ProgramsDataMixin
 from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
@@ -24,8 +27,7 @@ from student.tests.factories import UserFactory
 
 @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
 @attr(shard=2)
-class TestCredentialsRetrieval(ProgramsApiConfigMixin, CredentialsApiConfigMixin, CredentialsDataMixin,
-                               ProgramsDataMixin, CacheIsolationTestCase):
+class TestCredentialsRetrieval(CredentialsApiConfigMixin, CredentialsDataMixin, CacheIsolationTestCase):
     """ Tests covering the retrieval of user credentials from the Credentials
     service.
     """
@@ -60,19 +62,18 @@ class TestCredentialsRetrieval(ProgramsApiConfigMixin, CredentialsApiConfigMixin
             )
         ]
 
-    def expected_credentials_display_data(self):
+    def expected_credentials_display_data(self, programs):
         """ Returns expected credentials data to be represented. """
-        program_credentials_data = self._expected_progam_credentials_data()
         return [
             {
-                'display_name': self.PROGRAMS_API_RESPONSE['results'][0]['name'],
-                'subtitle': self.PROGRAMS_API_RESPONSE['results'][0]['subtitle'],
-                'credential_url':program_credentials_data[0]['certificate_url']
+                'display_name': programs[0]['title'],
+                'subtitle': programs[0]['subtitle'],
+                'credential_url':programs[0]['credential_url']
             },
             {
-                'display_name': self.PROGRAMS_API_RESPONSE['results'][1]['name'],
-                'subtitle':self.PROGRAMS_API_RESPONSE['results'][1]['subtitle'],
-                'credential_url':program_credentials_data[1]['certificate_url']
+                'display_name': programs[1]['title'],
+                'subtitle': programs[1]['subtitle'],
+                'credential_url':programs[1]['credential_url']
             }
         ]
 
@@ -128,21 +129,39 @@ class TestCredentialsRetrieval(ProgramsApiConfigMixin, CredentialsApiConfigMixin
         """Verify program credentials data can be retrieved and parsed correctly."""
         # create credentials and program configuration
         self.create_credentials_config()
-        self.create_programs_config()
 
         # Mocking the API responses from programs and credentials
-        self.mock_programs_api()
-        self.mock_credentials_api(self.user, reset_url=False)
+        uuidfirst, uuidsecond = str(uuid.uuid4()), str(uuid.uuid4())
+        credentials_api_response = {
+            "next": None,
+            "results": [
+                factories.UserCredential(
+                    id=1, username='test',
+                    credential=factories.ProgramCredential(program_uuid=uuidfirst)
+                ),
+                factories.UserCredential(
+                    id=2, username='test',
+                    credential=factories.ProgramCredential(program_uuid=uuidsecond)
+                ),
+                factories.UserCredential(
+                    id=3, username='test',
+                    status='revoked',
+                    credential=factories.ProgramCredential()
+                )
+            ]
+        }
+        self.mock_credentials_api(self.user, data=credentials_api_response, reset_url=False)
+        programs = [
+            catalog_factories.Program(uuid=uuidfirst), catalog_factories.Program(uuid=uuidsecond)
+        ]
 
-        actual = get_user_program_credentials(self.user)
-        program_credentials_data = self._expected_progam_credentials_data()
-        expected = self.PROGRAMS_API_RESPONSE['results'][:2]
-        expected[0]['credential_url'] = program_credentials_data[0]['certificate_url']
-        expected[1]['credential_url'] = program_credentials_data[1]['certificate_url']
+        with mock.patch("openedx.core.djangoapps.credentials.utils.get_programs_for_credentials") as mock_get_programs:
+            mock_get_programs.return_value = programs
+            actual = get_user_program_credentials(self.user)
 
-        # checking response from API is as expected
-        self.assertEqual(len(actual), 2)
-        self.assertEqual(actual, expected)
+            # checking response from API is as expected
+            self.assertEqual(len(actual), 2)
+            self.assertEqual(actual, programs)
 
     @httpretty.activate
     def test_get_user_program_credentials_revoked(self):
@@ -154,7 +173,7 @@ class TestCredentialsRetrieval(ProgramsApiConfigMixin, CredentialsApiConfigMixin
                 "username": "test",
                 "credential": {
                     "credential_id": 1,
-                    "program_id": 1
+                    "program_uuid": 'c9f2568b-6459-4fc2-badd-a14571a3de66'
                 },
                 "status": "revoked",
                 "uuid": "dummy-uuid-1"
@@ -171,14 +190,37 @@ class TestCredentialsRetrieval(ProgramsApiConfigMixin, CredentialsApiConfigMixin
         """
         # create credentials and program configuration
         self.create_credentials_config()
-        self.create_programs_config()
 
         # Mocking the API responses from programs and credentials
-        self.mock_programs_api()
-        self.mock_credentials_api(self.user, reset_url=False)
-        actual = get_programs_credentials(self.user)
-        expected = self.expected_credentials_display_data()
+        uuidfirst, uuidsecond = str(uuid.uuid4()), str(uuid.uuid4())
+        credentials_api_response = {
+            "next": None,
+            "results": [
+                factories.UserCredential(
+                    id=1, username='test',
+                    credential=factories.ProgramCredential(program_uuid=uuidfirst)
+                ),
+                factories.UserCredential(
+                    id=2, username='test',
+                    credential=factories.ProgramCredential(program_uuid=uuidsecond)
+                ),
+                factories.UserCredential(
+                    id=3, username='test',
+                    status='revoked',
+                    credential=factories.ProgramCredential()
+                )
+            ]
+        }
+        self.mock_credentials_api(self.user, data=credentials_api_response, reset_url=False)
+        programs = [
+            catalog_factories.Program(uuid=uuidfirst), catalog_factories.Program(uuid=uuidsecond)
+        ]
 
-        # Checking result is as expected
-        self.assertEqual(len(actual), 2)
-        self.assertEqual(actual, expected)
+        with mock.patch("openedx.core.djangoapps.catalog.utils.get_programs") as mock_get_programs:
+            mock_get_programs.return_value = programs
+            actual = get_programs_credentials(self.user)
+            expected = self.expected_credentials_display_data(programs)
+
+            # Checking result is as expected
+            self.assertEqual(len(actual), 2)
+            self.assertEqual(actual, expected)

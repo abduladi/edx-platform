@@ -1,4 +1,6 @@
 """Helper functions for working with the catalog service."""
+import logging
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from edx_rest_api_client.client import EdxRestApiClient
@@ -7,6 +9,9 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.lib.edx_api_utils import get_edx_api_data
 from openedx.core.lib.token_utils import JwtBuilder
+
+
+log = logging.getLogger(__name__)
 
 
 def create_catalog_api_client(user, catalog_integration):
@@ -74,6 +79,30 @@ def get_programs(user=None, uuid=None, type=None):  # pylint: disable=redefined-
         )
     else:
         return []
+
+
+def get_programs_for_credentials(user, programs_credentials):
+    """ Given a user and an iterable of credentials, get corresponding programs
+    data and return it as a list of dictionaries.
+
+    Arguments:
+        user (User): The user to authenticate as for requesting programs.
+        programs_credentials (list): List of credentials awarded to the user
+            for completion of a program.
+
+    Returns:
+        list, containing programs dictionaries.
+    """
+    certified_programs = []
+
+    programs = get_programs(user)
+    for program in programs:
+        for credential in programs_credentials:
+            if program['uuid'] == credential['credential']['program_uuid']:
+                program['credential_url'] = credential['certificate_url']
+                certified_programs.append(program)
+
+    return certified_programs
 
 
 def get_program_types(user=None):  # pylint: disable=redefined-builtin

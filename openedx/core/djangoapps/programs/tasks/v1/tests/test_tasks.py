@@ -16,20 +16,18 @@ import mock
 from provider.constants import CONFIDENTIAL
 
 from lms.djangoapps.certificates.api import MODES
+from openedx.core.djangoapps.catalog.tests import factories, mixins
+from openedx.core.djangoapps.catalog.utils import munge_catalog_program
 from openedx.core.djangoapps.credentials.tests.mixins import CredentialsApiConfigMixin
-from openedx.core.djangoapps.programs.tests import factories
-from openedx.core.djangoapps.programs.tests.mixins import ProgramsApiConfigMixin
 from openedx.core.djangoapps.programs.tasks.v1 import tasks
-from openedx.core.djangolib.testing.utils import CacheIsolationTestCase
 from student.tests.factories import UserFactory
-
 
 TASKS_MODULE = 'openedx.core.djangoapps.programs.tasks.v1.tasks'
 UTILS_MODULE = 'openedx.core.djangoapps.programs.utils'
 
 
 @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
-class GetApiClientTestCase(TestCase, ProgramsApiConfigMixin):
+class GetApiClientTestCase(CredentialsApiConfigMixin, TestCase):
     """
     Test the get_api_client function
     """
@@ -40,21 +38,20 @@ class GetApiClientTestCase(TestCase, ProgramsApiConfigMixin):
         Ensure the function is making the right API calls based on inputs
         """
         student = UserFactory()
-        ClientFactory.create(name='programs')
-        api_config = self.create_programs_config(
-            internal_service_url='http://foo',
-            api_version_number=99,
+        ClientFactory.create(name='credentials')
+        api_config = self.create_credentials_config(
+            internal_service_url='http://foo'
         )
         mock_build_token.return_value = 'test-token'
 
         api_client = tasks.get_api_client(api_config, student)
-        self.assertEqual(api_client._store['base_url'], 'http://foo/api/v99/')  # pylint: disable=protected-access
+        self.assertEqual(api_client._store['base_url'], 'http://foo/api/v2/')  # pylint: disable=protected-access
         self.assertEqual(api_client._store['session'].auth.token, 'test-token')  # pylint: disable=protected-access
 
 
 @httpretty.activate
 @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
-class GetCompletedProgramsTestCase(ProgramsApiConfigMixin, CacheIsolationTestCase):
+class GetCompletedProgramsTestCase(mixins.CatalogIntegrationMixin, TestCase):
     """
     Test the get_completed_programs function
     """
@@ -64,19 +61,14 @@ class GetCompletedProgramsTestCase(ProgramsApiConfigMixin, CacheIsolationTestCas
         super(GetCompletedProgramsTestCase, self).setUp()
 
         self.user = UserFactory()
-        self.programs_config = self.create_programs_config(cache_ttl=5)
-
-        ClientFactory(name=self.programs_config.OAUTH2_CLIENT_NAME, client_type=CONFIDENTIAL)
-
-        cache.clear()
+        self.catalog_integration = self.create_catalog_integration(cache_ttl=1)
 
     def _mock_programs_api(self, data):
         """Helper for mocking out Programs API URLs."""
         self.assertTrue(httpretty.is_enabled(), msg='httpretty must be enabled to mock Programs API calls.')
 
-        url = self.programs_config.internal_api_url.strip('/') + '/programs/'
+        url = self.catalog_integration.internal_api_url.strip('/') + '/programs/'
         body = json.dumps({'results': data})
-
         httpretty.register_uri(httpretty.GET, url, body=body, content_type='application/json')
 
     def _assert_num_requests(self, count):
@@ -86,31 +78,23 @@ class GetCompletedProgramsTestCase(ProgramsApiConfigMixin, CacheIsolationTestCas
     @mock.patch(UTILS_MODULE + '.get_completed_courses')
     def test_get_completed_programs(self, mock_get_completed_courses):
         """
-        Verify that completed programs are found, using the cache when possible.
+        Verify that completed programs are found
         """
-        course_id = 'org/course/run'
         data = [
-            factories.Program(
-                organizations=[factories.Organization()],
-                course_codes=[
-                    factories.CourseCode(run_modes=[
-                        factories.RunMode(course_key=course_id),
-                    ]),
-                ]
-            ),
+            factories.Program(),
         ]
         self._mock_programs_api(data)
 
-        mock_get_completed_courses.return_value = [
-            {'course_id': course_id, 'mode': MODES.verified}
-        ]
+        munged_program = munge_catalog_program(data[0])
+        course_codes = munged_program['course_codes']
 
+        mock_get_completed_courses.return_value = [
+            {'course_id': run_mode['course_key'], 'mode': run_mode['mode_slug']}
+            for run_mode in course_codes[0]['run_modes']
+        ]
         for _ in range(2):
             result = tasks.get_completed_programs(self.user)
-            self.assertEqual(result, [data[0]['id']])
-
-        # Verify that only one request to programs was made (i.e., the cache was hit).
-        self._assert_num_requests(1)
+            self.assertEqual(result[0], munged_program['id'])
 
 
 @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
@@ -128,7 +112,7 @@ class GetAwardedCertificateProgramsTestCase(TestCase):
             'username': 'dummy-username',
             'credential': {
                 'credential_id': None,
-                'program_id': None,
+                'program_uuid': None,
             },
             'status': 'dummy-status',
             'uuid': 'dummy-uuid',
@@ -144,9 +128,9 @@ class GetAwardedCertificateProgramsTestCase(TestCase):
         """
         student = UserFactory(username='test-username')
         mock_get_user_credentials.return_value = [
-            self.make_credential_result(status='awarded', credential={'program_id': 1}),
+            self.make_credential_result(status='awarded', credential={'program_uuid': 1}),
             self.make_credential_result(status='awarded', credential={'course_id': 2}),
-            self.make_credential_result(status='revoked', credential={'program_id': 3}),
+            self.make_credential_result(status='revoked', credential={'program_uuid': 3}),
         ]
 
         result = tasks.get_awarded_certificate_programs(student)
@@ -177,7 +161,7 @@ class AwardProgramCertificateTestCase(TestCase):
 
         expected_body = {
             'username': test_username,
-            'credential': {'program_id': 123},
+            'credential': {'program_uuid': 123},
             'attributes': []
         }
         self.assertEqual(json.loads(httpretty.last_request().body), expected_body)
@@ -189,18 +173,17 @@ class AwardProgramCertificateTestCase(TestCase):
 @mock.patch(TASKS_MODULE + '.get_awarded_certificate_programs')
 @mock.patch(TASKS_MODULE + '.get_completed_programs')
 @override_settings(CREDENTIALS_SERVICE_USERNAME='test-service-username')
-class AwardProgramCertificatesTestCase(TestCase, ProgramsApiConfigMixin, CredentialsApiConfigMixin):
+class AwardProgramCertificatesTestCase(mixins.CatalogIntegrationMixin, CredentialsApiConfigMixin, TestCase):
     """
     Tests for the 'award_program_certificates' celery task.
     """
 
     def setUp(self):
         super(AwardProgramCertificatesTestCase, self).setUp()
-        self.create_programs_config()
         self.create_credentials_config()
         self.student = UserFactory.create(username='test-student')
 
-        ClientFactory.create(name='programs')
+        self.catalog_integration = self.create_catalog_integration(cache_ttl=1)
         ClientFactory.create(name='credentials')
         UserFactory.create(username=settings.CREDENTIALS_SERVICE_USERNAME)  # pylint: disable=no-member
 
@@ -225,8 +208,8 @@ class AwardProgramCertificatesTestCase(TestCase, ProgramsApiConfigMixin, Credent
     @ddt.unpack
     def test_awarding_certs(
             self,
-            already_awarded_program_ids,
-            expected_awarded_program_ids,
+            already_awarded_program_uuids,
+            expected_awarded_program_uuids,
             mock_get_completed_programs,
             mock_get_awarded_certificate_programs,
             mock_award_program_certificate,
@@ -236,15 +219,14 @@ class AwardProgramCertificatesTestCase(TestCase, ProgramsApiConfigMixin, Credent
         the proper programs.
         """
         mock_get_completed_programs.return_value = [1, 2, 3]
-        mock_get_awarded_certificate_programs.return_value = already_awarded_program_ids
+        mock_get_awarded_certificate_programs.return_value = already_awarded_program_uuids
 
         tasks.award_program_certificates.delay(self.student.username).get()
 
-        actual_program_ids = [call[0][2] for call in mock_award_program_certificate.call_args_list]
-        self.assertEqual(actual_program_ids, expected_awarded_program_ids)
+        actual_program_uuids = [call[0][2] for call in mock_award_program_certificate.call_args_list]
+        self.assertEqual(actual_program_uuids, expected_awarded_program_uuids)
 
     @ddt.data(
-        ('programs', 'enable_certification'),
         ('credentials', 'enable_learner_issuance'),
     )
     @ddt.unpack

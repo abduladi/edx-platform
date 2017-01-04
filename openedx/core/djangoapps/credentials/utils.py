@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from openedx.core.djangoapps.credentials.models import CredentialsApiConfig
-from openedx.core.djangoapps.programs.utils import get_programs_for_credentials
+from openedx.core.djangoapps.catalog.utils import get_programs_for_credentials
 from openedx.core.lib.edx_api_utils import get_edx_api_data
 
 
@@ -55,7 +55,7 @@ def get_user_program_credentials(user):
     programs_credentials = []
     for credential in credentials:
         try:
-            if 'program_id' in credential['credential'] and credential['status'] == 'awarded':
+            if 'program_uuid' in credential['credential'] and credential['status'] == 'awarded':
                 programs_credentials.append(credential)
         except KeyError:
             log.exception('Invalid credential structure: %r', credential)
@@ -84,7 +84,7 @@ def get_programs_credentials(user):
     for program in programs_credentials:
         try:
             program_data = {
-                'display_name': program['name'],
+                'display_name': program['title'],
                 'subtitle': program['subtitle'],
                 'credential_url': program['credential_url'],
             }

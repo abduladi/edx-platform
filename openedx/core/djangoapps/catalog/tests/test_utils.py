@@ -9,6 +9,7 @@ from opaque_keys.edx.keys import CourseKey
 from openedx.core.djangoapps.catalog import utils
 from openedx.core.djangoapps.catalog.models import CatalogIntegration
 from openedx.core.djangoapps.catalog.tests import factories, mixins
+from openedx.core.djangoapps.credentials.tests import factories as credentials_factories
 from student.tests.factories import UserFactory, AnonymousUserFactory
 
 UTILS_MODULE = 'openedx.core.djangoapps.catalog.utils'
@@ -24,6 +25,7 @@ class TestGetPrograms(mixins.CatalogIntegrationMixin, TestCase):
 
         self.user = UserFactory()
         self.uuid = str(uuid.uuid4())
+        self.uuidsecond = str(uuid.uuid4())
         self.type = 'FooBar'
         self.catalog_integration = self.create_catalog_integration(cache_ttl=1)
 
@@ -171,6 +173,51 @@ class TestGetPrograms(mixins.CatalogIntegrationMixin, TestCase):
 
         data = utils.get_programs(self.user)
         self.assertEqual(data, [])
+
+    def _expected_progam_credentials_data(self):
+        """
+        Dry method for getting expected program credentials response data.
+        """
+        return [
+            credentials_factories.UserCredential(
+                id=1,
+                username='test',
+                credential=credentials_factories.ProgramCredential(
+                    program_uuid=self.uuid
+                )
+            ),
+            credentials_factories.UserCredential(
+                id=2,
+                username='test',
+                credential=credentials_factories.ProgramCredential(
+                    program_uuid=self.uuidsecond
+                )
+            )
+        ]
+
+    def test_get_program_for_certificates(self, _mock_cache, mock_get_catalog_data):   # pylint: disable=unused-argument
+        """Verify programs data can be retrieved and parsed correctly for certificates."""
+        programs = [
+            factories.Program(uuid=self.uuid),
+            factories.Program(uuid=self.uuidsecond)
+        ]
+
+        program_credentials_data = self._expected_progam_credentials_data()
+        with mock.patch("openedx.core.djangoapps.catalog.utils.get_programs") as patched_get_programs:
+            patched_get_programs.return_value = programs
+            actual = utils.get_programs_for_credentials(self.user, program_credentials_data)
+
+            self.assertEqual(len(actual), 2)
+            self.assertEqual(actual, programs)
+
+    def test_get_program_for_certificates_no_data(self, _mock_cache, mock_get_catalog_data):   # pylint: disable=unused-argument
+        """Verify behavior when no programs data is found for the user."""
+        program_credentials_data = self._expected_progam_credentials_data()
+        with mock.patch("openedx.core.djangoapps.catalog.utils.get_programs") as patched_get_programs:
+            patched_get_programs.return_value = []
+            actual = utils.get_programs_for_credentials(self.user, program_credentials_data)
+
+            self.assertEqual(actual, [])
 
 
 class TestMungeCatalogProgram(TestCase):
