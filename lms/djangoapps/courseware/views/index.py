@@ -441,8 +441,8 @@ class CoursewareIndex(View):
                 display_items = self.section.get_display_items()
                 if len(display_items) > 0:
                     courseware_context['section_title'] = '{position_title} | {section_title}'.format(
-                        position_title = display_items[self.section.position - 1].display_name_with_default,
-                        section_title = courseware_context['section_title']
+                        position_title=display_items[self.section.position - 1].display_name_with_default,
+                        section_title=courseware_context['section_title']
                     )
 
         return courseware_context
