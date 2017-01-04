@@ -16,12 +16,26 @@
  *     size of the modal.
  *   viewSpecificClasses: A string of CSS classes to be attached to
  *     the modal window.
- *   addSaveButton: A boolean indicating whether to include a save
+ *   addPrimaryActionButton: A boolean indicating whether to include a primary action
  *     button on the modal.
+ *   primaryActionButtonType: A string to be used as type for primary action button.
+ *   primaryActionButtonTitle: A string to be used as title for primary action button.
  */
 define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
     function($, _, gettext, BaseView) {
         var BaseModal = BaseView.extend({
+            tabbable_elements: [
+                "a[href]:not([tabindex='-1'])",
+                "area[href]:not([tabindex='-1'])",
+                "input:not([disabled]):not([tabindex='-1'])",
+                "select:not([disabled]):not([tabindex='-1'])",
+                "textarea:not([disabled]):not([tabindex='-1'])",
+                "button:not([disabled]):not([tabindex='-1'])",
+                "iframe:not([tabindex='-1'])",
+                "[tabindex]:not([tabindex='-1'])",
+                "[contentEditable=true]:not([tabindex='-1'])"
+            ],
+
             events: {
                 'click .action-cancel': 'cancel'
             },
@@ -36,7 +50,10 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                 title: '',
                 modalWindowClass: '.modal-window',
                 // A list of class names, separated by space.
-                viewSpecificClasses: ''
+                viewSpecificClasses: '',
+                addPrimaryActionButton: true,
+                primaryActionButtonType: 'save',
+                primaryActionButtonTitle: gettext('Save')
             }),
 
             initialize: function() {
@@ -84,20 +101,51 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
                 return '';
             },
 
+            inFocus: function() {
+                var tabbables;
+                // element to send focus to on hide
+                this.options.outFocusElement = this.options.outFocusElement || document.activeElement;
+
+                // Set focus to the container.
+                this.$(this.options.modalWindowClass).first().focus();
+
+                // Make tabs within the prompt loop rather than setting focus
+                // back to the main content of the page.
+                tabbables = this.$(this.tabbable_elements.join());
+                tabbables.on('keydown', function(event) {
+                    // On tab backward from the first tabbable item in the prompt
+                    if (event.which === 9 && event.shiftKey && event.target === tabbables.first()[0]) {
+                        event.preventDefault();
+                        tabbables.last().focus();
+                    // On tab forward from the last tabbable item in the prompt
+                    } else if (event.which === 9 && !event.shiftKey && event.target === tabbables.last()[0]) {
+                        event.preventDefault();
+                        tabbables.first().focus();
+                    }
+                });
+            },
+
+            outFocus: function() {
+                this.$(this.tabbable_elements.join()).off('keydown');
+                if (this.options.outFocusElement) {
+                    this.options.outFocusElement.focus();
+                }
+            },
+
             show: function() {
                 this.render();
                 this.resize();
                 $(window).resize(_.bind(this.resize, this));
 
-                // after showing and resizing, send focus
-                var modal = this.$el.find(this.options.modalWindowClass);
-                modal.focus();
+                // after showing and resizing, send focus to firs focusable element
+                this.inFocus();
             },
 
             hide: function() {
                 // Completely remove the modal from the DOM
                 this.undelegateEvents();
                 this.$el.html('');
+                this.outFocus();
             },
 
             cancel: function(event) {
@@ -112,8 +160,12 @@ define(['jquery', 'underscore', 'gettext', 'js/views/baseview'],
              * Adds the action buttons to the modal.
              */
             addActionButtons: function() {
-                if (this.options.addSaveButton) {
-                    this.addActionButton('save', gettext('Save'), true);
+                if (this.options.addPrimaryActionButton) {
+                    this.addActionButton(
+                        this.options.primaryActionButtonType,
+                        this.options.primaryActionButtonTitle,
+                        true
+                    );
                 }
                 this.addActionButton('cancel', gettext('Cancel'));
             },

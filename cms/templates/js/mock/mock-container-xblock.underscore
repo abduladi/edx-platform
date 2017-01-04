@@ -52,6 +52,9 @@
                                                         <li class="action-item action-duplicate">
                                                             <a href="#" class="duplicate-button action-button"></a>
                                                         </li>
+                                                        <li class="action-item action-move">
+                                                            <a href="#" data-tooltip="Move" class="move-button action-button"></a>
+                                                        </li>
                                                         <li class="action-item action-delete">
                                                             <a href="#" class="delete-button action-button"></a>
                                                         </li>
@@ -80,6 +83,9 @@
                                                         <li class="action-item action-duplicate">
                                                             <a href="#" class="duplicate-button action-button"></a>
                                                         </li>
+                                                        <li class="action-item action-move">
+                                                            <a href="#" data-tooltip="Move" class="move-button action-button"></a>
+                                                        </li>
                                                         <li class="action-item action-delete">
                                                             <a href="#" class="delete-button action-button"></a>
                                                         </li>
@@ -107,6 +113,9 @@
                                                         </li>
                                                         <li class="action-item action-duplicate">
                                                             <a href="#" class="duplicate-button action-button"></a>
+                                                        </li>
+                                                        <li class="action-item action-move">
+                                                            <a href="#" data-tooltip="Move" class="move-button action-button"></a>
                                                         </li>
                                                         <li class="action-item action-delete">
                                                             <a href="#" class="delete-button action-button"></a>
@@ -166,6 +175,9 @@
                                                         <li class="action-item action-duplicate">
                                                             <a href="#" class="duplicate-button action-button"></a>
                                                         </li>
+                                                        <li class="action-item action-move">
+                                                            <a href="#" data-tooltip="Move" class="move-button action-button"></a>
+                                                        </li>
                                                         <li class="action-item action-delete">
                                                             <a href="#" class="delete-button action-button"></a>
                                                         </li>
@@ -194,6 +206,9 @@
                                                         <li class="action-item action-duplicate">
                                                             <a href="#" class="duplicate-button action-button"></a>
                                                         </li>
+                                                        <li class="action-item action-move">
+                                                            <a href="#" data-tooltip="Move" class="move-button action-button"></a>
+                                                        </li>
                                                         <li class="action-item action-delete">
                                                             <a href="#" class="delete-button action-button"></a>
                                                         </li>
@@ -221,6 +236,9 @@
                                                         </li>
                                                         <li class="action-item action-duplicate">
                                                             <a href="#" class="duplicate-button action-button"></a>
+                                                        </li>
+                                                        <li class="action-item action-move">
+                                                            <a href="#" data-tooltip="Move" class="move-button action-button"></a>
                                                         </li>
                                                         <li class="action-item action-delete">
                                                             <a href="#" class="delete-button action-button"></a>

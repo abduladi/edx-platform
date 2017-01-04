@@ -89,6 +89,13 @@ messages = xblock.validate().to_json()
                                     <span class="sr">${_("Duplicate")}</span>
                                     </a>
                                 </li>
+
+                                <li class="action-item action-move">
+                                    <a href="#" data-tooltip="${_("Move")}" class="move-button action-button">
+                                    <span class="icon fa fa-folder-o" aria-hidden="true"></span>
+                                    <span class="sr">${_("Move")}</span>
+                                    </a>
+                                </li>
                             % endif
                         % endif
                         % if can_add:
@@ -149,7 +156,7 @@ messages = xblock.validate().to_json()
         ${content}
         </div>
     % endif
- % endif   
+ % endif
 
 % if not is_root:
     <!-- footer for xblock_aside -->
