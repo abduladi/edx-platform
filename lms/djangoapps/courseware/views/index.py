@@ -431,12 +431,19 @@ class CoursewareIndex(View):
                 courseware_context['default_tab'] = self.section.default_tab
 
             # section data
+            courseware_context['section_title'] = self.section.display_name_with_default_escaped
             section_context = self._create_section_context(
                 table_of_contents['previous_of_active_section'],
                 table_of_contents['next_of_active_section'],
             )
             courseware_context['fragment'] = self.section.render(STUDENT_VIEW, section_context)
-            courseware_context['section_title'] = self.section.sequence_display_name()
+            if self.section.position and self.section.has_children:
+                display_items = self.section.get_display_items()
+                if len(display_items) > 0:
+                    courseware_context['section_title'] = '{position_title} | {section_title}'.format(
+                        position_title = display_items[self.section.position - 1].display_name_with_default,
+                        section_title = courseware_context['section_title']
+                    )
 
         return courseware_context
 

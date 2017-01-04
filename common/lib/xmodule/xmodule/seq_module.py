@@ -575,13 +575,3 @@ class SequenceDescriptor(SequenceFields, ProctoringFields, MakoModuleDescriptor,
         xblock_body["content_type"] = "Sequence"
 
         return xblock_body
-
-    def sequence_display_name(self):
-        display_items = self.get_display_items()
-        section_title = self.display_name_with_default_escaped
-        if len(display_items) > 0:
-            section_title = '{position_title} | {section_title}'.format(
-                position_title=display_items[self.position - 1].display_name_with_default,
-                section_title=self.display_name_with_default_escaped
-            )
-        return section_title
