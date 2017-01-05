@@ -206,7 +206,7 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
     def verify_current_content_visibility(cls, date, hide_after_date):
         """
         Returns whether the content visibility policy passes
-        for the given due date and hide_after_due values and
+        for the given date and hide_after_date values and
         the current date-time.
         """
         return (
@@ -287,10 +287,10 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
         Returns whether the runtime user can view the content
         of this sequential.
         """
-        date = self._get_course().end if getattr(self, 'self_paced', False) else self.due
+        hidden_date = self._get_course().end if getattr(self, 'self_paced', False) else self.due
         return (
             self.runtime.user_is_staff or
-            self.verify_current_content_visibility(date, self.hide_after_due)
+            self.verify_current_content_visibility(hidden_date, self.hide_after_due)
         )
 
     def _student_view(self, context, banner_text=None):
