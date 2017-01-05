@@ -123,7 +123,7 @@
                     self.nextNav($focused, index, total);
                     break;
 
-                default:
+                // no default
                 }
             });
         };

@@ -3,7 +3,8 @@
     'use strict';
 
     describe('Sequence', function() {
-        var keydownHandler,
+        var local = {},
+            keydownHandler,
             keys = {
                 ENTER: 13,
                 LEFT: 37,
@@ -11,13 +12,14 @@
                 RIGHT: 39,
                 DOWN: 40
             };
+
         beforeEach(function() {
             loadFixtures('sequence.html');
-            window.XBlock = jasmine.createSpyObj('XBlock', ['initializeBlocks']);
+            local.XBlock = window.XBlock = jasmine.createSpyObj('XBlock', ['initializeBlocks']);
         });
 
         afterEach(function() {
-            delete window.XBlock;
+            delete local.XBlock;
         });
 
         keydownHandler = function(key) {
