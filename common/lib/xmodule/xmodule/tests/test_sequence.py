@@ -97,6 +97,7 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
     def test_render_student_view(self):
         html = self._get_rendered_student_view(
             self.sequence_3_1,
+            requested_child='first',
             extra_context=dict(next_url='NextSequential', prev_url='PrevSequential'),
         )
         self._assert_view_at_position(html, expected_position=1)
@@ -139,21 +140,15 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         self.assertIn("'banner_text': None", html)
 
     @freeze_time(DAY_AFTER_TOMORROW)
-    @ddt.data(
-        (None, 'subsection'),
-        ('Homework', 'homework'),
-    )
-    @ddt.unpack
-    def test_hidden_content_past_due(self, format_type, expected_text):
+    def test_hidden_content_past_due(self):
         progress_url = 'http://test_progress_link'
-        self._set_sequence_format(self.sequence_4_1, format_type)
+        self._set_sequence_format(self.sequence_4_1, None)
         html = self._get_rendered_student_view(
             self.sequence_4_1,
             extra_context=dict(progress_url=progress_url),
         )
         self.assertIn("hidden_content.html", html)
         self.assertIn(progress_url, html)
-        self.assertIn("'subsection_format': '{}'".format(expected_text), html)
 
     @freeze_time(DAY_AFTER_TOMORROW)
     def test_masquerade_hidden_content_past_due(self):
@@ -165,7 +160,7 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         self.assertIn("seq_module.html", html)
         self.assertIn(
             "'banner_text': 'Because the due date has passed, "
-            "this homework is hidden from the learner.'",
+            "this assignment is hidden from the learner.'",
             html
         )
 

@@ -248,20 +248,16 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
         display depending on whether staff is masquerading.
         """
         if not self._can_user_view_content():
-            subsection_format = (self.format or _("subsection")).lower()  # pylint: disable=no-member
+            date_reason = "course has ended" if getattr(self, 'self_paced', False) else "due date has passed"
 
-            # Translators: subsection_format refers to the assignment
-            # type of the subsection, such as Homework, Lab, Exam, etc.
             banner_text = _(
-                "Because the due date has passed, "
-                "this {subsection_format} is hidden from the learner."
-            ).format(subsection_format=subsection_format)
+                "Because the {date_reason}, this assignment is hidden from the learner."
+            ).format(date_reason=date_reason)
 
             hidden_content_html = self.system.render_template(
                 'hidden_content.html',
                 {
                     'self_paced': getattr(self, 'self_paced', False),
-                    'subsection_format': subsection_format,
                     'progress_url': context.get('progress_url'),
                 }
             )

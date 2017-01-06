@@ -25,7 +25,7 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
 
     Staff users are exempted from hidden content rules.
     """
-    VERSION = 1
+    VERSION = 2
     MERGED_DUE_DATE = 'merged_due_date'
     MERGED_END_DATE = 'merged_end_date'
     MERGED_HIDE_AFTER_DUE = 'merged_hide_after_due'
@@ -38,16 +38,6 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
         same identifier used in setup.py.
         """
         return "hidden_content"
-
-    @classmethod
-    def _get_merged_self_paced(cls, block_structure, block_key):
-        """
-        Returns whether the block with the given block_key is
-        part of a self-paced course.
-        """
-        return block_structure.get_transformer_block_field(
-            block_key, cls, cls.MERGED_SELF_PACED, False
-        )
 
     @classmethod
     def _get_merged_hide_after_due(cls, block_structure, block_key):
@@ -71,16 +61,6 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
         )
 
     @classmethod
-    def _get_merged_end_date(cls, block_structure, block_key):
-        """
-        Returns the merged value for the end date for the block with
-        the given block_key in the given block_structure.
-        """
-        return block_structure.get_transformer_block_field(
-            block_key, cls, cls.MERGED_END_DATE, False
-        )
-
-    @classmethod
     def collect(cls, block_structure):
         """
         Collects any information that's necessary to execute this
@@ -93,13 +73,6 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
             merged_field_name=cls.MERGED_HIDE_AFTER_DUE,
         )
 
-        collect_merged_boolean_field(
-            block_structure,
-            transformer=cls,
-            xblock_field_name='self_paced',
-            merged_field_name=cls.MERGED_SELF_PACED,
-        )
-
         collect_merged_date_field(
             block_structure,
             transformer=cls,
@@ -110,15 +83,7 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
             func_merge_ancestors=min,
         )
 
-        collect_merged_date_field(
-            block_structure,
-            transformer=cls,
-            xblock_field_name='end',
-            merged_field_name=cls.MERGED_END_DATE,
-            default_date=MAXIMUM_DATE,
-            func_merge_parents=max,
-            func_merge_ancestors=min,
-        )
+        block_structure.request_xblock_fields(u'self_paced', u'end')
 
     def transform_block_filters(self, usage_info, block_structure):
         # Users with staff access bypass the Visibility check.
@@ -137,9 +102,9 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
         be hidden, given the current time.
         """
         hide_after_due = self._get_merged_hide_after_due(block_structure, block_key)
-        self_paced = self._get_merged_self_paced(block_structure, block_key)
+        self_paced = block_structure[block_structure.root_block_usage_key].self_paced
         if self_paced:
-            date = self._get_merged_end_date(block_structure, block_key)
+            date = block_structure[block_structure.root_block_usage_key].end
         else:
             date = self._get_merged_due_date(block_structure, block_key)
         return not SequenceModule.verify_current_content_visibility(date, hide_after_due)
