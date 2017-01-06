@@ -2,6 +2,7 @@
 CourseDetails
 """
 import re
+import uuid
 import logging
 
 from django.conf import settings
@@ -258,7 +259,8 @@ class CourseDetails(object):
             dirty = True
 
         if 'instructor_info' in jsondict:
-            descriptor.instructor_info = jsondict['instructor_info']
+            instructor_info = cls._check_for_unique_id(jsondict['instructor_info'])
+            descriptor.instructor_info = instructor_info
             dirty = True
 
         if 'language' in jsondict and jsondict['language'] != descriptor.language:
@@ -288,6 +290,14 @@ class CourseDetails(object):
         # Could just return jsondict w/o doing any db reads, but I put
         # the reads in as a means to confirm it persisted correctly
         return CourseDetails.fetch(course_key)
+
+    @staticmethod
+    def _check_for_unique_id(instructor_info):
+        for instructor in instructor_info.get("instructors", []):
+            if "UUID" not in instructor:
+                instructor["UUID"] = str(uuid.uuid4())
+        return instructor_info
+
 
     @staticmethod
     def parse_video_tag(raw_video):
