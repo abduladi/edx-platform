@@ -8,16 +8,16 @@ from celery import task
 from django.test import TestCase
 
 from ..models import FailedTask
-from ..task import PersistentTask
+from ..task import ReapplicableTask
 
 
-class PersistentTaskTestCase(TestCase):
+class ReapplicableTaskTestCase(TestCase):
     """
     Test that persistent tasks save the appropriate values when needed.
     """
 
     def setUp(self):
-        @task(base=PersistentTask)
+        @task(base=ReapplicableTask)
         def exampletask(exception=None):
             u"""
             A simple task for testing persistence
@@ -26,7 +26,7 @@ class PersistentTaskTestCase(TestCase):
                 raise ValueError(u'The example task failed')
             return
         self.exampletask = exampletask
-        super(PersistentTaskTestCase, self).setUp()
+        super(ReapplicableTaskTestCase, self).setUp()
 
     def test_exampletask_without_failure(self):
         result = self.exampletask.delay()

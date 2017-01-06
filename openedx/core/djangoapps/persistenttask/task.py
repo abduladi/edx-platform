@@ -1,4 +1,4 @@
-"""
+u"""
 Celery utility code for persistent tasks.
 """
 
@@ -31,7 +31,7 @@ def serialize_kwargs(kwargs):
 
 
 # pylint: disable=abstract-method
-class PersistentTask(Task):
+class ReapplicableTask(Task):
     u"""
     Custom Celery Task base class that persists task data on failure.
     """
@@ -45,7 +45,7 @@ class PersistentTask(Task):
             delattr(self, self.persistent_retry_attribute)
         if self.persistent_retry_attribute in kwargs:
             setattr(self, self.persistent_retry_attribute, kwargs.pop(self.persistent_retry_attribute))
-        super(PersistentTask, self).__call__(*args, **kwargs)
+        super(ReapplicableTask, self).__call__(*args, **kwargs)
 
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         u"""
