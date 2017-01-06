@@ -78,10 +78,21 @@
 
         Sequence.prototype.updatePageTitle = function() {
             // update the page title to include the current section
-            var positionLink = this.link_for(this.position);
+            var positionLink = this.link_for(this.position),
+                currentSectionTitle;
 
             if (positionLink && positionLink.data('page-title')) {
-                document.title = positionLink.data('page-title') + this.base_page_title;
+                currentSectionTitle = positionLink.data('page-title');
+            }
+
+            if (!this.base_page_title) {
+                // remove the current section's title (if it exists) to get the base
+                this.base_page_title = document.title.replace(currentSectionTitle, '');
+            }
+
+            if (currentSectionTitle != this.currentSectionTitle) {
+                this.currentSectionTitle = currentSectionTitle;
+                document.title = this.currentSectionTitle + this.base_page_title;
             }
         };
 
