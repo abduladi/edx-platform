@@ -89,7 +89,7 @@
                 this.base_page_title = document.title.replace(currentSectionTitle, '');
             }
 
-            if (currentSectionTitle != this.currentSectionTitle) {
+            if (currentSectionTitle !== this.currentSectionTitle) {
                 this.currentSectionTitle = currentSectionTitle;
                 document.title = this.currentSectionTitle + this.base_page_title;
             }
