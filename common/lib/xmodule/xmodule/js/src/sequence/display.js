@@ -51,7 +51,6 @@
             this.ajaxUrl = this.el.data('ajax-url');
             this.nextUrl = this.el.data('next-url');
             this.prevUrl = this.el.data('prev-url');
-            this.base_page_title = ' | ' + document.title;
             this.bind();
             this.render(parseInt(this.el.data('position'), 10));
         }
