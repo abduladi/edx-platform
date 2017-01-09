@@ -27,7 +27,7 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
     """
     VERSION = 2
     MERGED_DUE_DATE = 'merged_due_date'
-    MERGED_END_DATE = 'merged_end_date'
+    MERGED_HIDE_AFTER_DUE = 'merged_hide_after_due'
 
     @classmethod
     def name(cls):
