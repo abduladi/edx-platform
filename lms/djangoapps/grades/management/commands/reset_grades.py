@@ -73,20 +73,16 @@ class Command(BaseCommand):
         modified_start = None
         modified_end = None
 
-        if not options.get('delete') and not options.get('dry_run'):
-            raise CommandError('Either --delete or --dry_run must be specified.')
+        run_mode = self._get_mutually_exclusive_option(options, 'delete', 'dry_run')
+        courses_mode = self._get_mutually_exclusive_option(options, 'courses', 'all_courses')
 
-        if not options.get('courses') and not options.get('all_courses'):
-            raise CommandError('Either --courses or --all_courses must be specified.')
-
-        if options.get('courses'):
+        if courses_mode == 'courses':
             try:
                 course_keys = [CourseKey.from_string(course_key_string) for course_key_string in options['courses']]
             except InvalidKeyError:
                 raise CommandError('Invalid key specified.')
 
-        dry_run = options.get('dry_run', False)
-        log.info("reset_grade: Started in %s mode!", "dry_run" if dry_run else "real")
+        log.info("reset_grade: Started in %s mode!", run_mode)
 
         if options.get('modified_start'):
             modified_start = datetime.strptime(options['modified_start'], DATE_FORMAT)
@@ -96,7 +92,7 @@ class Command(BaseCommand):
                 raise CommandError('Optional value for modified_end provided without a value for modified_start.')
             modified_end = datetime.strptime(options['modified_end'], DATE_FORMAT)
 
-        if dry_run:
+        if options.get('dry_run'):
             self._query_grades(PersistentSubsectionGrade, course_keys, modified_start, modified_end)
             self._query_grades(PersistentCourseGrade, course_keys, modified_start, modified_end)
 
@@ -104,7 +100,7 @@ class Command(BaseCommand):
             self._delete_grades(PersistentSubsectionGrade, course_keys, modified_start, modified_end)
             self._delete_grades(PersistentCourseGrade, course_keys, modified_start, modified_end)
 
-        log.info("reset_grade: Finished in %s mode!", "dry_run" if dry_run else "real")
+        log.info("reset_grade: Finished in %s mode!", run_mode)
 
     def _delete_grades(self, grade_model_class, *args, **kwargs):
         """
@@ -142,3 +138,17 @@ class Command(BaseCommand):
             grade_model_class.__name__,
             total_for_all_courses,
         )
+
+    def _get_mutually_exclusive_option(self, options, option_1, option_2):
+        """
+        Validates that exactly one or the other of the 2 given
+        options are specified.
+        Returns the name of the found option.
+        """
+        if not options.get(option_1) and not options.get(option_2):
+            raise CommandError('Either --{} or --{} must be specified.'.format(option_1, option_2))
+
+        if options.get(option_1) and options.get(option_2):
+            raise CommandError('Both --{} and --{} cannot be specified.'.format(option_1, option_2))
+
+        return option_1 if options.get(option_1) else option_2
