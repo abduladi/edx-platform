@@ -329,7 +329,7 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
             self.position = 1
         elif context.get('requested_child') == 'last':
             self.position = number_of_display_items or 1
-        elif self.position is None or self.position > number_of_display_items:
+        elif self.position is None or self.position > number_of_display_items or context.get('efischer_silly_var'):
             self.position = 1
 
     def _render_student_view_for_items(self, context, display_items, fragment):

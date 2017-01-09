@@ -97,7 +97,6 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
     def test_render_student_view(self):
         html = self._get_rendered_student_view(
             self.sequence_3_1,
-            requested_child='first',
             extra_context=dict(next_url='NextSequential', prev_url='PrevSequential'),
         )
         self._assert_view_at_position(html, expected_position=1)
@@ -112,6 +111,11 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
     def test_student_view_last_child(self):
         html = self._get_rendered_student_view(self.sequence_3_1, requested_child='last')
         self._assert_view_at_position(html, expected_position=3)
+        html = self._get_rendered_student_view(
+            self.sequence_3_1,
+            extra_context=dict(next_url='NextSequential', prev_url='PrevSequential', efischer_silly_var=True),
+        )
+        self._assert_view_at_position(html, expected_position=1)
 
     def _get_rendered_student_view(self, sequence, requested_child=None, extra_context=None):
         """
@@ -142,7 +146,6 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
     @freeze_time(DAY_AFTER_TOMORROW)
     def test_hidden_content_past_due(self):
         progress_url = 'http://test_progress_link'
-        self._set_sequence_format(self.sequence_4_1, None)
         html = self._get_rendered_student_view(
             self.sequence_4_1,
             extra_context=dict(progress_url=progress_url),
@@ -152,7 +155,6 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
 
     @freeze_time(DAY_AFTER_TOMORROW)
     def test_masquerade_hidden_content_past_due(self):
-        self._set_sequence_format(self.sequence_4_1, "Homework")
         html = self._get_rendered_student_view(
             self.sequence_4_1,
             extra_context=dict(specific_masquerade=True),
@@ -163,10 +165,3 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
             "this assignment is hidden from the learner.'",
             html
         )
-
-    def _set_sequence_format(self, sequence, format_type):
-        """
-        Sets the format field on the given sequence to the
-        given value.
-        """
-        sequence._xmodule.format = format_type  # pylint: disable=protected-access
