@@ -183,7 +183,7 @@ class CourseOverview(TimeStampedModel):
             effort=CourseDetails.fetch_about_attribute(course.id, 'effort'),
             course_video_url=CourseDetails.fetch_video_url(course.id),
             self_paced=course.self_paced,
-            instructor_info=json.dumps(course.instructor_info),
+            instructor_info=course.instructor_info,
         )
 
     @classmethod

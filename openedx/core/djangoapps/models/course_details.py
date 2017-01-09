@@ -259,8 +259,7 @@ class CourseDetails(object):
             dirty = True
 
         if 'instructor_info' in jsondict:
-            instructor_info = cls._check_for_unique_id(jsondict['instructor_info'])
-            descriptor.instructor_info = instructor_info
+            descriptor.instructor_info = cls._populate_instructor_uuid(jsondict['instructor_info'])
             dirty = True
 
         if 'language' in jsondict and jsondict['language'] != descriptor.language:
@@ -292,12 +291,11 @@ class CourseDetails(object):
         return CourseDetails.fetch(course_key)
 
     @staticmethod
-    def _check_for_unique_id(instructor_info):
+    def _populate_instructor_uuid(instructor_info):
         for instructor in instructor_info.get("instructors", []):
-            if "UUID" not in instructor:
-                instructor["UUID"] = str(uuid.uuid4())
+            if "uuid" not in instructor:
+                instructor["uuid"] = str(uuid.uuid4())
         return instructor_info
-
 
     @staticmethod
     def parse_video_tag(raw_video):
