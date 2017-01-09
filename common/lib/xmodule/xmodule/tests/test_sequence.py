@@ -3,7 +3,6 @@ Tests for sequence module.
 """
 # pylint: disable=no-member
 from datetime import timedelta
-import ddt
 from django.utils.timezone import now
 from freezegun import freeze_time
 from mock import Mock
@@ -14,19 +13,18 @@ from xmodule.tests.xml import factories as xml
 from xmodule.x_module import STUDENT_VIEW
 from xmodule.seq_module import SequenceModule
 
+TODAY = now()
+TOMORROW = TODAY + timedelta(days=1)
+DAY_AFTER_TOMORROW = TOMORROW + timedelta(days=1)
 
-@ddt.ddt
-class SequenceBlockTestCase(XModuleXmlImportTest):
-    """
-    Tests for the Sequence Module.
-    """
-    TODAY = now()
-    TOMORROW = TODAY + timedelta(days=1)
-    DAY_AFTER_TOMORROW = TOMORROW + timedelta(days=1)
 
+class SequenceBlockTestBase(XModuleXmlImportTest):
+    """
+    Base class for tests of Sequence Module.
+    """
     @classmethod
     def setUpClass(cls):
-        super(SequenceBlockTestCase, cls).setUpClass()
+        super(SequenceBlockTestBase, cls).setUpClass()
 
         course_xml = cls._set_up_course_xml()
         cls.course = cls.process_xml(course_xml)
@@ -45,7 +43,7 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         """
         Sets up and returns XML course structure.
         """
-        course = xml.CourseFactory.build()
+        course = xml.CourseFactory.build(end=str(TOMORROW))
 
         chapter_1 = xml.ChapterFactory.build(parent=course)  # has 2 child sequences
         xml.ChapterFactory.build(parent=course)  # has 0 child sequences
@@ -58,7 +56,7 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         xml.SequenceFactory.build(  # sequence_4_1
             parent=chapter_4,
             hide_after_due=str(True),
-            due=str(cls.TOMORROW),
+            due=str(TOMORROW),
         )
 
         for _ in range(3):
@@ -90,6 +88,27 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
         module_system.descriptor_runtime = block._runtime  # pylint: disable=protected-access
         block.xmodule_runtime = module_system
 
+    def _get_rendered_student_view(self, sequence, requested_child=None, extra_context=None):
+        """
+        Returns the rendered student view for the given sequence and the
+        requested_child parameter.
+        """
+        context = {'requested_child': requested_child}
+        if extra_context:
+            context.update(extra_context)
+        return sequence.xmodule_runtime.render(sequence, STUDENT_VIEW, context).content
+
+    def _assert_view_at_position(self, rendered_html, expected_position):
+        """
+        Verifies that the rendered view contains the expected position.
+        """
+        self.assertIn("'position': {}".format(expected_position), rendered_html)
+
+
+class SequenceBlockTestCase(SequenceBlockTestBase):
+    """
+    Concrete class testing sequence module code in an instructor-paced course.
+    """
     def test_student_view_init(self):
         seq_module = SequenceModule(runtime=Mock(position=2), descriptor=Mock(), scope_ids=Mock())
         self.assertEquals(seq_module.position, 2)  # matches position set in the runtime
@@ -111,22 +130,6 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
     def test_student_view_last_child(self):
         html = self._get_rendered_student_view(self.sequence_3_1, requested_child='last')
         self._assert_view_at_position(html, expected_position=3)
-
-    def _get_rendered_student_view(self, sequence, requested_child=None, extra_context=None):
-        """
-        Returns the rendered student view for the given sequence and the
-        requested_child parameter.
-        """
-        context = {'requested_child': requested_child}
-        if extra_context:
-            context.update(extra_context)
-        return sequence.xmodule_runtime.render(sequence, STUDENT_VIEW, context).content
-
-    def _assert_view_at_position(self, rendered_html, expected_position):
-        """
-        Verifies that the rendered view contains the expected position.
-        """
-        self.assertIn("'position': {}".format(expected_position), rendered_html)
 
     def test_tooltip(self):
         html = self._get_rendered_student_view(self.sequence_3_1, requested_child=None)
@@ -160,3 +163,34 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
             "this assignment is hidden from the learner.'",
             html
         )
+
+
+class SelfPacedSequenceBlockTestCase(SequenceBlockTestBase):
+    """
+    Allows tests to be run against a self-paced course.
+    """
+    def setUp(self, *args, **kwargs):
+        """
+        Store the previous value of self.course.self_paced, and force the
+        effective value to be True for the duration of this test.
+        """
+        super(SelfPacedSequenceBlockTestCase, self).setUp(*args, **kwargs)
+        self.previous_self_paced = self.course.self_paced
+        self.course.self_paced = True
+
+    def tearDown(self, *args, **kwargs):
+        """
+        Restore the previous value of self.course.self_paced after test.
+        """
+        self.course.self_paced = self.previous_self_paced
+        super(SelfPacedSequenceBlockTestCase, self).tearDown(*args, **kwargs)
+
+    @freeze_time(DAY_AFTER_TOMORROW)
+    def test_hidden_content_past_end(self):
+        progress_url = 'http://test_progress_link'
+        html = self._get_rendered_student_view(
+            self.sequence_4_1,
+            extra_context=dict(progress_url=progress_url),
+        )
+        self.assertIn("hidden_content.html", html)
+        self.assertIn(progress_url, html)
