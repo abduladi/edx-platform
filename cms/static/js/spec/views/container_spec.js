@@ -69,7 +69,7 @@ define(['jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/spec_
 
                     // Give the leaf elements some height to mimic actual components. Otherwise
                     // drag and drop fails as the elements on bunched on top of each other.
-                    $('.level-element').css('height', 200);
+                    $('.level-element').css('height', 230);
 
                     return requests;
                 };
@@ -127,7 +127,7 @@ define(['jquery', 'edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers', 'js/spec_
                 it('does nothing if item not moved far enough', function() {
                     var requests = init(this);
                     // Drag the first component in Group A down very slightly but not enough to move it.
-                    dragComponentVertically(groupAComponent1, 1);
+                    dragComponentVertically(groupAComponent1, 5);
                     verifyNumReorderCalls(requests, 0);
                 });
 
