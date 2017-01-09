@@ -28,8 +28,6 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
     VERSION = 2
     MERGED_DUE_DATE = 'merged_due_date'
     MERGED_END_DATE = 'merged_end_date'
-    MERGED_HIDE_AFTER_DUE = 'merged_hide_after_due'
-    MERGED_SELF_PACED = 'merged_self_paced'
 
     @classmethod
     def name(cls):
@@ -104,7 +102,7 @@ class HiddenContentTransformer(FilteringTransformerMixin, BlockStructureTransfor
         hide_after_due = self._get_merged_hide_after_due(block_structure, block_key)
         self_paced = block_structure[block_structure.root_block_usage_key].self_paced
         if self_paced:
-            date = block_structure[block_structure.root_block_usage_key].end
+            hidden_date = block_structure[block_structure.root_block_usage_key].end
         else:
-            date = self._get_merged_due_date(block_structure, block_key)
-        return not SequenceModule.verify_current_content_visibility(date, hide_after_due)
+            hidden_date = self._get_merged_due_date(block_structure, block_key)
+        return not SequenceModule.verify_current_content_visibility(hidden_date, hide_after_due)

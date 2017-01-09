@@ -111,11 +111,6 @@ class SequenceBlockTestCase(XModuleXmlImportTest):
     def test_student_view_last_child(self):
         html = self._get_rendered_student_view(self.sequence_3_1, requested_child='last')
         self._assert_view_at_position(html, expected_position=3)
-        html = self._get_rendered_student_view(
-            self.sequence_3_1,
-            extra_context=dict(next_url='NextSequential', prev_url='PrevSequential', efischer_silly_var=True),
-        )
-        self._assert_view_at_position(html, expected_position=1)
 
     def _get_rendered_student_view(self, sequence, requested_child=None, extra_context=None):
         """

@@ -248,11 +248,10 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
         display depending on whether staff is masquerading.
         """
         if not self._can_user_view_content():
-            date_reason = "course has ended" if getattr(self, 'self_paced', False) else "due date has passed"
-
-            banner_text = _(
-                "Because the {date_reason}, this assignment is hidden from the learner."
-            ).format(date_reason=date_reason)
+            if getattr(self, 'self_paced', False):
+                banner_text = _("Because the course has ended, this assignment is hidden from the learner.")
+            else:
+                banner_text = _("Because the due date has passed, this assignment is hidden from the learner.")
 
             hidden_content_html = self.system.render_template(
                 'hidden_content.html',
@@ -329,7 +328,7 @@ class SequenceModule(SequenceFields, ProctoringFields, XModule):
             self.position = 1
         elif context.get('requested_child') == 'last':
             self.position = number_of_display_items or 1
-        elif self.position is None or self.position > number_of_display_items or context.get('efischer_silly_var'):
+        elif self.position is None or self.position > number_of_display_items:
             self.position = 1
 
     def _render_student_view_for_items(self, context, display_items, fragment):
