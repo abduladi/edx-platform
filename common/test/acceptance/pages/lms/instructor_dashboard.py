@@ -199,11 +199,8 @@ class SpecialExamsPage(PageObject):
         """
         Expand the allowance section
         """
+        self.q(css="#ui-accordion-proctoring-accordion-header-0").click()
         allowance_section = SpecialExamsPageAllowanceSection(self.browser)
-        if not self.q(css="div.wrap #ui-accordion-proctoring-accordion-header-0[aria-selected=true]").present:
-            self.q(css="div.wrap #ui-accordion-proctoring-accordion-header-0").click()
-            self.wait_for_element_presence("div.wrap #ui-accordion-proctoring-accordion-header-0[aria-selected=true]",
-                                           "Allowance Section")
         allowance_section.wait_for_page()
         return allowance_section
 
@@ -211,11 +208,8 @@ class SpecialExamsPage(PageObject):
         """
         Expand the Student Attempts Section
         """
+        self.q(css="#ui-accordion-proctoring-accordion-header-1").click()
         exam_attempts_section = SpecialExamsPageAttemptsSection(self.browser)
-        if not self.q(css="div.wrap #ui-accordion-proctoring-accordion-header-1[aria-selected=true]").present:
-            self.q(css="div.wrap #ui-accordion-proctoring-accordion-header-1").click()
-            self.wait_for_element_presence("div.wrap #ui-accordion-proctoring-accordion-header-1[aria-selected=true]",
-                                           "Attempts Section")
         exam_attempts_section.wait_for_page()
         return exam_attempts_section
 
@@ -878,61 +872,61 @@ class SpecialExamsPageAllowanceSection(PageObject):
     url = None
 
     def is_browser_on_page(self):
-        return self.q(css="div.wrap #ui-accordion-proctoring-accordion-header-0[aria-selected=true]").present
+        return self.q(css=".special-allowance-container").present
 
     @property
     def is_add_allowance_button_visible(self):
         """
         Returns True if the Add Allowance button is present.
         """
-        return self.q(css="a#add-allowance").present
+        return self.q(css="#add-allowance").present
 
     @property
     def is_allowance_record_visible(self):
         """
         Returns True if the Add Allowance button is present.
         """
-        return self.q(css="table.allowance-table tr.allowance-items").present
+        return self.q(css=".allowance-table .allowance-items").present
 
     @property
     def is_add_allowance_popup_visible(self):
         """
         Returns True if the Add Allowance popup and it's all assets are present.
         """
-        return self.q(css="div.modal div.modal-header").present and self._are_all_assets_present()
+        return self.q(css=".modal .modal-header").present and self._are_all_assets_present()
 
     def _are_all_assets_present(self):
         """
         Returns True if all the assets present in add allowance popup/form
         """
         return (
-            self.q(css="select#proctored_exam").present and
-            self.q(css="label#exam_type_label").present and
-            self.q(css="input#allowance_value").present and
-            self.q(css="input#user_info").present and
-            self.q(css="input#addNewAllowance").present
+            self.q(css="#proctored_exam").present and
+            self.q(css="#exam_type_label").present and
+            self.q(css="#allowance_value").present and
+            self.q(css="#user_info").present and
+            self.q(css="#addNewAllowance").present
         ) and (
             # This will be present if exam is proctored
-            self.q(css="select#allowance_type").present or
+            self.q(css="#allowance_type").present or
             # This will be present if exam is timed
-            self.q(css="label#timed_exam_allowance_type").present
+            self.q(css="#timed_exam_allowance_type").present
         )
 
     def click_add_allowance_button(self):
         """
         Click the add allowance button
         """
-        self.q(css="a#add-allowance").click()
-        self.wait_for_element_presence("div.modal div.modal-header", "Popup should be visible")
+        self.q(css="#add-allowance").click()
+        self.wait_for_element_presence(".modal .modal-header", "Popup should be visible")
 
     def submit_allowance_form(self, allowed_minutes, username):
         """
         Fill and submit the allowance
         """
-        self.q(css='input#allowance_value').fill(allowed_minutes)
-        self.q(css='input#user_info').fill(username)
-        self.q(css="input#addNewAllowance").click()
-        self.wait_for_element_absence("div.modal div.modal-header", "Popup should be hidden")
+        self.q(css='#allowance_value').fill(allowed_minutes)
+        self.q(css='#user_info').fill(username)
+        self.q(css="#addNewAllowance").click()
+        self.wait_for_element_absence(".modal .modal-header", "Popup should be hidden")
         self.wait_for_ajax()
 
 
@@ -943,8 +937,7 @@ class SpecialExamsPageAttemptsSection(PageObject):
     url = None
 
     def is_browser_on_page(self):
-        return (self.q(css="div.wrap #ui-accordion-proctoring-accordion-header-1[aria-selected=true]").present and
-                self.q(css="#search_attempt_id").present)
+        return self.q(css=".exam-attempts-content").present
 
     @property
     def is_search_text_field_visible(self):
@@ -958,7 +951,7 @@ class SpecialExamsPageAttemptsSection(PageObject):
         """
         Returns True if a row with the Student's attempt is present
         """
-        return self.q(css="a.remove-attempt").present
+        return self.q(css=".remove-attempt").present
 
     def remove_student_attempt(self):
         """
