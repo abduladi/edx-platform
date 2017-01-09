@@ -269,26 +269,21 @@ class TestResetGrades(TestCase):
         self._assert_course_delete_stat_logged(mock_log, num_rows=0)
 
     def test_invalid_key(self):
-        with self.assertRaises(CommandError) as exc:
-            self.command.handle(courses=['invalid/key'])
-            self.assertEquals('Invalid key specified.', exc.message)
+        with self.assertRaisesRegexp(CommandError, 'Invalid key specified.*invalid/key'):
+            self.command.handle(dry_run=True, courses=['invalid/key'])
 
     def test_no_run_mode(self):
-        with self.assertRaises(CommandError) as exc:
+        with self.assertRaisesMessage(CommandError, 'Either --delete or --dry_run must be specified.'):
             self.command.handle(all_courses=True)
-            self.assertEquals('Either --dry_run or --delete must be specified.', exc.message)
 
     def test_both_run_modes(self):
-        with self.assertRaises(CommandError) as exc:
+        with self.assertRaisesMessage(CommandError, 'Both --delete and --dry_run cannot be specified.'):
             self.command.handle(all_courses=True, dry_run=True, delete=True)
-            self.assertEquals('Both --dry_run and --delete cannot be specified.', exc.message)
 
     def test_no_course_mode(self):
-        with self.assertRaises(CommandError) as exc:
+        with self.assertRaisesMessage(CommandError, 'Either --courses or --all_courses must be specified.'):
             self.command.handle(dry_run=True)
-            self.assertEquals('Either --all_courses or --courses must be specified.', exc.message)
 
     def test_both_course_modes(self):
-        with self.assertRaises(CommandError) as exc:
+        with self.assertRaisesMessage(CommandError, 'Both --courses and --all_courses cannot be specified.'):
             self.command.handle(dry_run=True, all_courses=True, courses=['some/course/key'])
-            self.assertEquals('Both --all_courses and --courses cannot be specified.', exc.message)

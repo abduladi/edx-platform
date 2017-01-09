@@ -76,14 +76,6 @@ class Command(BaseCommand):
         run_mode = self._get_mutually_exclusive_option(options, 'delete', 'dry_run')
         courses_mode = self._get_mutually_exclusive_option(options, 'courses', 'all_courses')
 
-        if courses_mode == 'courses':
-            try:
-                course_keys = [CourseKey.from_string(course_key_string) for course_key_string in options['courses']]
-            except InvalidKeyError:
-                raise CommandError('Invalid key specified.')
-
-        log.info("reset_grade: Started in %s mode!", run_mode)
-
         if options.get('modified_start'):
             modified_start = datetime.strptime(options['modified_start'], DATE_FORMAT)
 
@@ -92,13 +84,18 @@ class Command(BaseCommand):
                 raise CommandError('Optional value for modified_end provided without a value for modified_start.')
             modified_end = datetime.strptime(options['modified_end'], DATE_FORMAT)
 
-        if options.get('dry_run'):
-            self._query_grades(PersistentSubsectionGrade, course_keys, modified_start, modified_end)
-            self._query_grades(PersistentCourseGrade, course_keys, modified_start, modified_end)
+        if courses_mode == 'courses':
+            try:
+                course_keys = [CourseKey.from_string(course_key_string) for course_key_string in options['courses']]
+            except InvalidKeyError as error:
+                raise CommandError('Invalid key specified: {}'.format(error.message))
 
-        else:
-            self._delete_grades(PersistentSubsectionGrade, course_keys, modified_start, modified_end)
-            self._delete_grades(PersistentCourseGrade, course_keys, modified_start, modified_end)
+        log.info("reset_grade: Started in %s mode!", run_mode)
+
+        operation = self._query_grades if options.get('dry_run') else self._delete_grades
+
+        operation(PersistentSubsectionGrade, course_keys, modified_start, modified_end)
+        operation(PersistentCourseGrade, course_keys, modified_start, modified_end)
 
         log.info("reset_grade: Finished in %s mode!", run_mode)
 
