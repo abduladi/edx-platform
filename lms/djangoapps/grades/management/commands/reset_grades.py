@@ -92,7 +92,7 @@ class Command(BaseCommand):
 
         log.info("reset_grade: Started in %s mode!", run_mode)
 
-        operation = self._query_grades if options.get('dry_run') else self._delete_grades
+        operation = self._query_grades if run_mode == 'dry_run' else self._delete_grades
 
         operation(PersistentSubsectionGrade, course_keys, modified_start, modified_end)
         operation(PersistentCourseGrade, course_keys, modified_start, modified_end)
@@ -138,8 +138,7 @@ class Command(BaseCommand):
 
     def _get_mutually_exclusive_option(self, options, option_1, option_2):
         """
-        Validates that exactly one or the other of the 2 given
-        options are specified.
+        Validates that exactly one of the 2 given options is specified.
         Returns the name of the found option.
         """
         if not options.get(option_1) and not options.get(option_2):
