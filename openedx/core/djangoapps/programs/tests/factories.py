@@ -1,4 +1,6 @@
 """Factories for generating fake program-related data."""
+from uuid import uuid4
+
 import factory
 from factory.fuzzy import FuzzyText
 
@@ -19,6 +21,12 @@ class Program(factory.Factory):
     organizations = []
     course_codes = []
     banner_image_urls = {}
+
+    @factory.lazy_attribute
+    def uuid(self):
+        # NOTE (CCB): We return a string here since nearly all of our tests will be testing for that
+        # data type rather than UUID.
+        return uuid4().hex
 
 
 class Organization(factory.Factory):
