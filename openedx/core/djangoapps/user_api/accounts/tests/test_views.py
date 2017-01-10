@@ -847,14 +847,14 @@ class TestAccountDeactivation(TestCase):
         response = client.post(self.url)
         self.assertEqual(response.status_code, expected_status)
         test_user = User.objects.get(username=self.test_user.username)
-        self.assertEqual(test_user.has_usable_password, expected_activation_status)
+        self.assertEqual(test_user.has_usable_password(), expected_activation_status)
 
     def test_user_deactivated(self):
         """
         Verify a user is deactivated when staff posts to the deactivation endpoint.
         """
         self.client.login(username=self.staff_user.username, password=self.PASSWORD)
-        self.assertTrue(self.test_user.has_usable_password)
+        self.assertTrue(self.test_user.has_usable_password())
         self.assert_activation_status(self.client)
 
     def test_non_staff_rejection(self):
@@ -862,7 +862,7 @@ class TestAccountDeactivation(TestCase):
         Verify a non-staff user is rejected from posting to the deactivation endpoint.
         """
         self.client.login(username=self.test_user.username, password=self.PASSWORD)
-        self.assertTrue(self.test_user.has_usable_password)
+        self.assertTrue(self.test_user.has_usable_password())
         self.assert_activation_status(
             self.client,
             expected_status=status.HTTP_403_FORBIDDEN,
