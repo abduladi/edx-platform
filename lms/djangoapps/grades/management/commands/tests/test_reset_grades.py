@@ -150,7 +150,8 @@ class TestResetGrades(TestCase):
         self._update_or_create_grades()
         self._assert_grades_exist_for_courses(self.course_keys)
 
-        self.command.handle(delete=True, all_courses=True)
+        with self.assertNumQueries(4):
+            self.command.handle(delete=True, all_courses=True)
 
         self._assert_grades_absent_for_courses(self.course_keys)
         self._assert_subsection_delete_stat_logged(
@@ -168,10 +169,11 @@ class TestResetGrades(TestCase):
         self._update_or_create_grades()
         self._assert_grades_exist_for_courses(self.course_keys)
 
-        self.command.handle(
-            delete=True,
-            courses=[unicode(course_key) for course_key in self.course_keys[:num_courses_to_reset]]
-        )
+        with self.assertNumQueries(4):
+            self.command.handle(
+                delete=True,
+                courses=[unicode(course_key) for course_key in self.course_keys[:num_courses_to_reset]]
+            )
 
         self._assert_grades_absent_for_courses(self.course_keys[:num_courses_to_reset])
         self._assert_grades_exist_for_courses(self.course_keys[num_courses_to_reset:])
@@ -192,7 +194,8 @@ class TestResetGrades(TestCase):
         with freeze_time(self._date_from_now(days=4)):
             self._update_or_create_grades(self.course_keys[:num_courses_with_updated_grades])
 
-        self.command.handle(delete=True, modified_start=self._date_str_from_now(days=2), all_courses=True)
+        with self.assertNumQueries(4):
+            self.command.handle(delete=True, modified_start=self._date_str_from_now(days=2), all_courses=True)
 
         self._assert_grades_absent_for_courses(self.course_keys[:num_courses_with_updated_grades])
         self._assert_grades_exist_for_courses(self.course_keys[num_courses_with_updated_grades:])
@@ -206,12 +209,13 @@ class TestResetGrades(TestCase):
         with freeze_time(self._date_from_now(days=5)):
             self._update_or_create_grades(self.course_keys[2:4])
 
-        self.command.handle(
-            delete=True,
-            modified_start=self._date_str_from_now(days=2),
-            modified_end=self._date_str_from_now(days=4),
-            all_courses=True,
-        )
+        with self.assertNumQueries(4):
+            self.command.handle(
+                delete=True,
+                modified_start=self._date_str_from_now(days=2),
+                modified_end=self._date_str_from_now(days=4),
+                all_courses=True,
+            )
 
         # Only grades for courses modified within the 2->4 days
         # should be deleted.
@@ -223,7 +227,8 @@ class TestResetGrades(TestCase):
         self._update_or_create_grades()
         self._assert_grades_exist_for_courses(self.course_keys)
 
-        self.command.handle(dry_run=True, all_courses=True)
+        with self.assertNumQueries(2):
+            self.command.handle(dry_run=True, all_courses=True)
 
         self._assert_grades_exist_for_courses(self.course_keys)
         self._assert_subsection_query_stat_logged(
@@ -241,10 +246,11 @@ class TestResetGrades(TestCase):
         self._update_or_create_grades()
         self._assert_grades_exist_for_courses(self.course_keys)
 
-        self.command.handle(
-            dry_run=True,
-            courses=[unicode(course_key) for course_key in self.course_keys[:num_courses_to_query]]
-        )
+        with self.assertNumQueries(2):
+            self.command.handle(
+                dry_run=True,
+                courses=[unicode(course_key) for course_key in self.course_keys[:num_courses_to_query]]
+            )
 
         self._assert_grades_exist_for_courses(self.course_keys)
         self._assert_subsection_query_stat_logged(
@@ -262,7 +268,8 @@ class TestResetGrades(TestCase):
     def test_reset_no_existing_grades(self, mock_log):
         self._assert_grades_absent_for_courses(self.course_keys)
 
-        self.command.handle(delete=True, all_courses=True)
+        with self.assertNumQueries(4):
+            self.command.handle(delete=True, all_courses=True)
 
         self._assert_grades_absent_for_courses(self.course_keys)
         self._assert_subsection_delete_stat_logged(mock_log, num_rows=0)
