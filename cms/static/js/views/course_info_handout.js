@@ -53,7 +53,12 @@ define(['js/views/baseview', 'codemirror', 'common/js/components/views/feedback_
                 $('#handout_error').removeClass('is-shown');
                 $('.save-button').removeClass('is-disabled').attr('aria-disabled', false);
                 if ($('.CodeMirror-lines').find('.cm-error').length == 0) {
-                    this.model.set('data', this.$codeMirror.getValue());
+                    if (this.$codeMirror.getValue() == '') {
+                        this.model.set('data', '<ol></ol>');
+                    }
+                    else {
+                        this.model.set('data', this.$codeMirror.getValue());
+                    }
                     var saving = new NotificationView.Mini({
                         title: gettext('Saving')
                     });
