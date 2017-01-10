@@ -233,10 +233,10 @@ class AccountDeactivationView(APIView):
         """
         POST /api/user/v1/accounts/{username}/deactivate/
 
-        Changes the 'is_active' attribute of a user.
+        Marks the user as having no password set for deactivation purposes.
         """
         user = User.objects.get(username=username)
-        user.is_active = False
+        user.set_unusable_password()
         user.save()
         account_settings = get_account_settings(request, [username])[0]
         return Response(account_settings)
