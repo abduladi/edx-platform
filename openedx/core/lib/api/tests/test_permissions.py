@@ -9,7 +9,6 @@ from nose.plugins.attrib import attr
 from student.roles import CourseStaffRole, CourseInstructorRole
 from openedx.core.lib.api.permissions import (
     IsStaffOrOwner,
-    IsStaffUser,
     IsCourseStaffInstructor,
     IsMasterCourseStaffInstructor,
 )
